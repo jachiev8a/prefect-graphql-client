@@ -1,0 +1,4 @@
+prefect==1.2.2
+python-decouple
+virtualenv
+cron-descriptor

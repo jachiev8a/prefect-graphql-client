@@ -343,9 +343,15 @@ class PrefectCloudApiModel(object):
     def _print_report_separator(self):
         print("-" * self.REPORT_SEPARATOR)
 
-    def print_report_schedule_active(self):
+    def print_report_schedule_active(self, project_filter: str = None):
 
-        response = self.execute_raw_query(query_templates.Q_ALL_SCHEDULED_WORKFLOWS)
+        query = query_templates.Q_ALL_SCHEDULED_WORKFLOWS
+        if project_filter:
+            query = query_templates.Q_ALL_SCHEDULED_WORKFLOWS_WITH_PROJECT_FILTER.replace(
+                "$_PROJECT_NAME", project_filter
+            )
+
+        response = self.execute_raw_query(query)
         flow_group_data = response.get('data', {}).get('flow_group', {})
 
         self._print_report_separator()
@@ -355,18 +361,22 @@ class PrefectCloudApiModel(object):
         flow_groups_by_project = {}  # type: Dict[str, List]
 
         for flow_group in flow_group_data:
+
             flow_group_obj = FlowGroupObject(flow_group)
-            if flow_group_obj.schedules:
-                first_clock = flow_group_obj.schedules[0]
-                if first_clock.is_cron():
+            if not flow_group_obj.schedules:
+                continue
 
-                    proj_name = flow_group_obj.project.name
+            first_clock = flow_group_obj.schedules[0]
+            if not first_clock.is_cron():
+                continue
 
-                    if proj_name in flow_groups_by_project.keys():
-                        flow_groups_by_project[proj_name].append(flow_group_obj)
-                    else:
-                        flow_groups_by_project[proj_name] = []
-                        flow_groups_by_project[proj_name].append(flow_group_obj)
+            proj_name = flow_group_obj.project.name
+
+            if proj_name in flow_groups_by_project.keys():
+                flow_groups_by_project[proj_name].append(flow_group_obj)
+            else:
+                flow_groups_by_project[proj_name] = []
+                flow_groups_by_project[proj_name].append(flow_group_obj)
 
         for flow_group_name, flow_group_objects in flow_groups_by_project.items():
             print("")
@@ -395,9 +405,15 @@ class PrefectCloudApiModel(object):
         elif sort_value == "schedule":
             flow_group_list.sort(key=lambda _flow_group: _flow_group.schedules[0].get_human_description())
 
-    def print_report_schedule_configurations(self, sort_by=None):
+    def print_report_schedule_configurations(self, project_filter: str = None, sort_by: str=None):
 
-        response = self.execute_raw_query(query_templates.Q_ALL_SCHEDULED_CONFIGURATIONS)
+        query = query_templates.Q_ALL_SCHEDULED_WORKFLOWS
+        if project_filter:
+            query = query_templates.Q_ALL_SCHEDULED_WORKFLOWS_WITH_PROJECT_FILTER.replace(
+                "$_PROJECT_NAME", project_filter
+            )
+
+        response = self.execute_raw_query(query)
         flow_group_data = response.get('data', {}).get('flow_group', {})
 
         self._print_report_separator()

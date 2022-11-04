@@ -64,12 +64,15 @@ def main():
     )
 
     if print_schedule_active:
-        client.print_report_schedule_active()
+        client.print_report_schedule_active(project_filter="prod")
         print("")
         print("")
 
     if print_schedule_config:
-        client.print_report_schedule_configurations(sort_by="schedule")
+        client.print_report_schedule_configurations(
+            project_filter="prod",
+            sort_by="schedule",
+        )
 
 
 if __name__ == "__main__":

@@ -1,0 +1,2 @@
+# scripts always needs to have cloud backend
+backend = "cloud"

@@ -26,6 +26,7 @@ def main():
     #     help="email to be used to authenticate to 1password account",
     # )
     parser.add_argument(
+        "-s",
         "--print-schedule-active",
         action="store_true",
         required=False,
@@ -34,6 +35,7 @@ def main():
         ),
     )
     parser.add_argument(
+        "-c",
         "--print-schedule-config",
         action="store_true",
         required=False,
@@ -42,14 +44,25 @@ def main():
             "If a workflows has been configured with schedule, it will be shown here."
         ),
     )
+    parser.add_argument(
+        "-r",
+        "--print-general-report",
+        action="store_true",
+        required=False,
+        help=(
+            "..........................."
+        ),
+    )
 
     args = parser.parse_args()
     print_schedule_active = args.print_schedule_active
     print_schedule_config = args.print_schedule_config
+    print_general_report = args.print_general_report
 
     any_print_selected = (
         print_schedule_active or
-        print_schedule_config
+        print_schedule_config or
+        print_general_report
     )
 
     if not any_print_selected:
@@ -70,6 +83,18 @@ def main():
 
     if print_schedule_config:
         client.print_report_schedule_configurations(
+            project_filter="prod",
+            sort_by="schedule",
+        )
+
+    if print_schedule_config:
+        client.print_report_schedule_configurations(
+            project_filter="prod",
+            sort_by="schedule",
+        )
+
+    if print_general_report:
+        client.print_general_report(
             project_filter="prod",
             sort_by="schedule",
         )

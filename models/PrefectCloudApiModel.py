@@ -277,9 +277,13 @@ class PrefectCloudApiModel(object):
     REPORT_TITLE_WORKFLOW = "Workflow"
     REPORT_TITLE_PROJECT = "Project"
     REPORT_TITLE_ACTIVE = "Active"
-    REPORT_TITLE_SCHEDULE = "Schedule (Config)"
+    REPORT_TITLE_SCHEDULE_CONFIG = "Schedule (Config)"
 
     REPORT_SEPARATOR = 120
+
+    SORT_NAME_KEY = "name"
+    SORT_SCHEDULE_ACTIVE = "active"
+    SORT_SCHEDULE_CONFIG = "schedule"
 
     def __init__(self, api_key: str = None, tenant_id: str = None):
 
@@ -353,7 +357,7 @@ class PrefectCloudApiModel(object):
         flow_group_data = response.get('data', {}).get('flow_group', {})
 
         self._print_report_separator()
-        print(f"{self.REPORT_TITLE_WORKFLOW:<55} {self.REPORT_TITLE_PROJECT:<25} {self.REPORT_TITLE_SCHEDULE:<15}")
+        print(f"{self.REPORT_TITLE_WORKFLOW:<55} {self.REPORT_TITLE_PROJECT:<25} {self.REPORT_TITLE_SCHEDULE_CONFIG:<15}")
         self._print_report_separator()
 
         flow_groups_by_project = {}  # type: Dict[str, List]
@@ -394,13 +398,13 @@ class PrefectCloudApiModel(object):
         self._print_report_separator()
 
     def sort_flow_groups_by_value(self, flow_group_list: List[FlowGroupObject], sort_value):
-        if sort_value == "name":
+        if sort_value == self.SORT_NAME_KEY:
             flow_group_list.sort(key=lambda _flow_group: _flow_group.flows[0].name)
-        elif sort_value == "active":
+        elif sort_value == self.SORT_SCHEDULE_ACTIVE:
             flow_group_list.sort(
                 key=lambda _flow_group: _flow_group.flows[0].is_schedule_active(), reverse=True
             )
-        elif sort_value == "schedule":
+        elif sort_value == self.SORT_SCHEDULE_CONFIG:
             flow_group_list.sort(
                 key=lambda _flow_group:
                 _flow_group.schedules[0].get_human_description() if _flow_group.schedules else "N/A"
@@ -417,14 +421,7 @@ class PrefectCloudApiModel(object):
         response = self.execute_raw_query(query)
         flow_group_data = response.get('data', {}).get('flow_group', {})
 
-        self._print_report_separator()
-        print(
-            f"{self.REPORT_TITLE_WORKFLOW:<54} "
-            f"{self.REPORT_TITLE_PROJECT:<25} "
-            f"{self.REPORT_TITLE_ACTIVE:<10} "
-            f"{self.REPORT_TITLE_SCHEDULE:<15}"
-        )
-        self._print_report_separator()
+        self._print_common_report_header(sort_by)
 
         flow_groups_by_project = {}  # type: Dict[str, List]
 
@@ -475,14 +472,7 @@ class PrefectCloudApiModel(object):
         response = self.execute_raw_query(query)
         flow_group_data = response.get('data', {}).get('flow_group', {})
 
-        self._print_report_separator()
-        print(
-            f"{self.REPORT_TITLE_WORKFLOW:<54} "
-            f"{self.REPORT_TITLE_PROJECT:<25} "
-            f"{self.REPORT_TITLE_ACTIVE:<10} "
-            f"{self.REPORT_TITLE_SCHEDULE:<15}"
-        )
-        self._print_report_separator()
+        self._print_common_report_header(sort_by)
 
         flow_groups_by_project = {}  # type: Dict[str, List]
 
@@ -523,6 +513,32 @@ class PrefectCloudApiModel(object):
                 )
                 print(result)
         print("")
+
+    def _print_common_report_header(self, sort_value=""):
+        # workflow name
+        workflow_name_title = self.REPORT_TITLE_WORKFLOW
+        if sort_value == self.SORT_NAME_KEY:
+            workflow_name_title += " [*]"
+
+        # schedule active
+        schedule_active_title = self.REPORT_TITLE_ACTIVE
+        if sort_value == self.SORT_SCHEDULE_ACTIVE:
+            schedule_active_title += " [*]"
+
+        # schedule active
+        schedule_config_title = self.REPORT_TITLE_SCHEDULE_CONFIG
+        if sort_value == self.SORT_SCHEDULE_CONFIG:
+            schedule_config_title += " [*]"
+
+        # print report header
+        self._print_report_separator()
+        print(
+            f"{workflow_name_title:<54} "
+            f"{self.REPORT_TITLE_PROJECT:<25} "
+            f"{schedule_active_title:<10} "
+            f"{schedule_config_title:<15}"
+        )
+        self._print_report_separator()
 
     def _get_query_from_factory(
         self,

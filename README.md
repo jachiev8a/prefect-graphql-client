@@ -30,9 +30,6 @@ python -m virtualenv .venv
 
 # (venv) install dependencies
 python -m pip install -r requirements.txt
-
-# configure your prefect backend to "cloud"
-prefect backend cloud
 ```
 
 ## How to use the client
@@ -48,4 +45,22 @@ python query_executor.py -h
 # Examples:
 python query_executor.py --print-schedule-active
 python query_executor.py --print-schedule-config
+python query_executor.py --print-general-report
+```
+
+## Usages/Examples
+
+```bash
+# activate virtualenv (linux)
+. .venv/bin/activate
+
+# (venv) run main script with help command 
+# to see what you are able to do with it.
+# short arguments flags are used:
+#   -r for "--print-general-report"
+#   -p for "--project-filter"
+python query_executor.py -r -p "prod"
+
+# this will print a general report, filtering projects
+# that contains *prod* name in the project name. 
 ```

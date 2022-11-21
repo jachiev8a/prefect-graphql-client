@@ -50,19 +50,32 @@ def main():
         action="store_true",
         required=False,
         help=(
-            "..........................."
+            "Prints a general report of the current workflows filtered by project name. "
+            "Report include schedule information (even if not set). "
+            "This is the report with most details set."
         ),
+    )
+    parser.add_argument(
+        "-p",
+        "--project-filter",
+        default=None,
+        required=False,
+        metavar="PROJECT_FILTER",
+        help="filter output elements from the reports by project name. "
+             "(e.g. -p production, -p development)",
     )
 
     args = parser.parse_args()
-    print_schedule_active = args.print_schedule_active
-    print_schedule_config = args.print_schedule_config
-    print_general_report = args.print_general_report
+    arg_print_schedule_active = args.print_schedule_active
+    arg_print_schedule_config = args.print_schedule_config
+    arg_print_general_report = args.print_general_report
+    arg_project_filter = args.project_filter
 
+    # validate that any of the important arguments are set.
     any_print_selected = (
-        print_schedule_active or
-        print_schedule_config or
-        print_general_report
+        arg_print_schedule_active or
+        arg_print_schedule_config or
+        arg_print_general_report
     )
 
     if not any_print_selected:
@@ -76,26 +89,26 @@ def main():
         tenant_id=prefect_tenant_id
     )
 
-    if print_schedule_active:
-        client.print_report_schedule_active(project_filter="prod")
+    if arg_print_schedule_active:
+        client.print_report_schedule_active(project_filter=arg_project_filter)
         print("")
         print("")
 
-    if print_schedule_config:
+    if arg_print_schedule_config:
         client.print_report_schedule_configurations(
-            project_filter="prod",
+            project_filter=arg_project_filter,
             sort_by="schedule",
         )
 
-    if print_schedule_config:
+    if arg_print_schedule_config:
         client.print_report_schedule_configurations(
-            project_filter="prod",
+            project_filter=arg_project_filter,
             sort_by="schedule",
         )
 
-    if print_general_report:
+    if arg_print_general_report:
         client.print_general_report(
-            project_filter="prod",
+            project_filter=arg_project_filter,
             sort_by="schedule",
         )
 

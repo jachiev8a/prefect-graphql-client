@@ -1,8 +1,14 @@
 import argparse
+import os
+import pathlib
 
 from decouple import config
 
 from models.PrefectCloudApiModel import PrefectCloudApiModel
+
+# add backend path to environment
+backend_abspath = os.path.join(pathlib.Path(__file__).parent, 'backend.toml')
+os.environ["PREFECT__BACKEND_CONFIG_PATH"] = backend_abspath
 
 
 # ---------------

@@ -1,8 +1,16 @@
+import os
+import pathlib
+
 from typing import Dict
 from typing import List
 
-import prefect
 from cron_descriptor import get_description
+
+import queries
+
+# add backend path to environment
+backend_abspath = os.path.join(pathlib.Path(__file__).parent, 'config', 'backend.toml')
+os.environ["PREFECT__BACKEND_CONFIG_PATH"] = backend_abspath
 
 pair_hours = "2,4,6,8,10,12,14,16,18,20,22"
 odd_hours = "1,3,5,7,9,11,13,15,17,19,21,23"
@@ -12,8 +20,6 @@ split_minutes = [f"{x}" for x in minutes.split(',')]
 cron_stack_pair = [f"{min} {pair_hours} * * *" for min in split_minutes]
 cron_stack_odd = [f"{min} {odd_hours} * * *" for min in split_minutes]
 CRON_STACK = cron_stack_pair + cron_stack_odd
-
-import queries
 
 
 class ScheduleClock(object):
@@ -286,7 +292,7 @@ class PrefectCloudApiModel(object):
     SORT_SCHEDULE_CONFIG = "schedule"
 
     def __init__(self, api_key: str = None, tenant_id: str = None):
-
+        import prefect
         if api_key and tenant_id:
             self.client = prefect.Client(api_key=api_key, tenant_id=tenant_id)
         else:

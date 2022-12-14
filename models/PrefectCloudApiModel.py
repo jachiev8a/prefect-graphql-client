@@ -459,7 +459,7 @@ class PrefectCloudApiModel(object):
                 flow_name_with_v = f"|- {latest_flow.get_versioned_name()}"
 
                 result = (
-                    f"{flow_name_with_v:<54} "
+                    f"{flow_name_with_v:<62} "
                     f"{flow_group_object.project.name:<25} "
                     f"{flow_schedule_active:<10} "
                     f"{first_clock.get_human_description()}"
@@ -512,7 +512,7 @@ class PrefectCloudApiModel(object):
                 flow_name_with_v = f"|- {latest_flow.get_versioned_name()}"
 
                 result = (
-                    f"{flow_name_with_v:<54} "
+                    f"{flow_name_with_v:<62} "
                     f"{flow_group_object.project.name:<25} "
                     f"{flow_schedule_active:<10} "
                     f"{clock_human_description}"
@@ -539,7 +539,7 @@ class PrefectCloudApiModel(object):
         # print report header
         self._print_report_separator()
         print(
-            f"{workflow_name_title:<54} "
+            f"{workflow_name_title:<62} "
             f"{self.REPORT_TITLE_PROJECT:<25} "
             f"{schedule_active_title:<10} "
             f"{schedule_config_title:<15}"

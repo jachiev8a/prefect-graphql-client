@@ -1,6 +1,4 @@
 import argparse
-import os
-import pathlib
 
 from decouple import config
 

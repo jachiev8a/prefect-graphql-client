@@ -1,16 +1,23 @@
 import os
 import pathlib
+from zoneinfo import ZoneInfo
 
 from typing import Dict
 from typing import List
 
-from cron_descriptor import get_description
+from cron_descriptor import get_description, Options, CasingTypeEnum
+from cron_converter import Cron
+from decouple import config
 
 import queries
 
 # add backend path to environment
 backend_abspath = os.path.join(pathlib.Path(__file__).parent, 'config', 'backend.toml')
 os.environ["PREFECT__BACKEND_CONFIG_PATH"] = backend_abspath
+
+# get values from env
+LOCAL_TIMEZONE = config("LOCAL_TIMEZONE", default='US/Central')
+LOCAL_TIMEZONE_STR_FMT = "%I:%M %p"
 
 pair_hours = "2,4,6,8,10,12,14,16,18,20,22"
 odd_hours = "1,3,5,7,9,11,13,15,17,19,21,23"
@@ -22,6 +29,13 @@ cron_stack_odd = [f"{min} {odd_hours} * * *" for min in split_minutes]
 CRON_STACK = cron_stack_pair + cron_stack_odd
 
 
+# cron descriptor options
+CRON_DESCRIPTOR_OPTIONS = Options()
+CRON_DESCRIPTOR_OPTIONS.throw_exception_on_parse_error = True
+CRON_DESCRIPTOR_OPTIONS.casing_type = CasingTypeEnum.Sentence
+CRON_DESCRIPTOR_OPTIONS.use_24hour_time_format = True
+
+
 class ScheduleClock(object):
 
     UTC_STR = "(UTC)"
@@ -30,9 +44,32 @@ class ScheduleClock(object):
         self.type = clock_data.get("type")
         self.value = clock_data.get("cron", "")
 
+    def get_converted_datetime_from_cron_value(
+        self,
+        cron_value: str,
+        timezone: str = "localtime"
+    ):
+        cron_schedule = Cron(cron_value).schedule()
+        cron_datetime_utc = cron_schedule.next()
+        converted_datetime = cron_datetime_utc.astimezone(ZoneInfo(timezone))
+        return converted_datetime
+
     def get_human_description(self):
         if self.is_cron():
-            return f"{get_description(self.value)} {self.UTC_STR}"
+            # convert cron string value into human-readable string
+            cron_human_description = get_description(
+                expression=self.value,
+                options=CRON_DESCRIPTOR_OPTIONS,
+            )
+            converted_datetime = self.get_converted_datetime_from_cron_value(
+                cron_value=self.value,
+                timezone=LOCAL_TIMEZONE
+            )
+            converted_datetime_str = converted_datetime.strftime(LOCAL_TIMEZONE_STR_FMT)
+            return (
+                f"{cron_human_description} {self.UTC_STR} --- "
+                f"[ {converted_datetime_str} - ({LOCAL_TIMEZONE}) ]"
+            )
         return "NA"
 
     def is_cron(self):

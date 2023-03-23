@@ -43,6 +43,14 @@ class ScheduleClock(object):
     def __init__(self, clock_data):
         self.type = clock_data.get("type")
         self.value = clock_data.get("cron", "")
+        self.parameters = self._get_parameters(clock_data)
+
+    def _get_parameters(self, clock_data):
+        raw_parameters = clock_data.get("parameter_defaults", {})
+        parameters = {}
+        for key, value in raw_parameters.items():
+            parameters[key] = value
+        return parameters
 
     def get_converted_datetime_from_cron_value(
         self,
@@ -74,6 +82,9 @@ class ScheduleClock(object):
 
     def is_cron(self):
         return bool(self.type == "CronClock")
+
+    def __str__(self):
+        return f"{self.type} | {self.value} | Parameters: {self.parameters}"
 
 
 class ProjectObject(object):
@@ -153,6 +164,10 @@ class FlowGroupObject(object):
         self.flows.sort(key=lambda flow: int(flow.version), reverse=True)
 
         self.project = self.flows[0].project
+
+    def get_latest_flow(self) -> FlowObject:
+        if self.flows:
+            return self.flows[0]
 
 
 class ClauseWhere(object):
@@ -506,29 +521,36 @@ class PrefectCloudApiModel(object):
 
     def print_general_report(
         self,
-        project_filter: str = None,
+        project_filters: list[str] = None,
         sort_by: str = None,
     ):
+        if project_filters is None:
+            project_filters = []
 
-        query = self._get_query_from_factory(project_filter, include_schedule_only=False)
+        queries_to_execute = self._get_queries_to_execute(project_filters)
 
-        response = self.execute_raw_query(query)
-        flow_group_data = response.get('data', {}).get('flow_group', {})
+        flow_group_data_list = []
+
+        for query in queries_to_execute:
+            response = self.execute_raw_query(query)
+            flow_group_data_from_response = response.get('data', {}).get('flow_group', {})
+            flow_group_data_list.append(flow_group_data_from_response)
 
         self._print_common_report_header(sort_by)
 
-        flow_groups_by_project = {}  # type: Dict[str, List]
+        flow_groups_by_project = {}  # type: Dict[str, List[FlowGroupObject]]
 
-        for flow_group in flow_group_data:
-            flow_group_obj = FlowGroupObject(flow_group)
+        for flow_group_data in flow_group_data_list:
+            for flow_group in flow_group_data:
+                flow_group_instance = FlowGroupObject(flow_group)
 
-            proj_name = flow_group_obj.project.name
+                proj_name = flow_group_instance.project.name
 
-            if proj_name in flow_groups_by_project.keys():
-                flow_groups_by_project[proj_name].append(flow_group_obj)
-            else:
-                flow_groups_by_project[proj_name] = []
-                flow_groups_by_project[proj_name].append(flow_group_obj)
+                if proj_name in flow_groups_by_project.keys():
+                    flow_groups_by_project[proj_name].append(flow_group_instance)
+                else:
+                    flow_groups_by_project[proj_name] = []
+                    flow_groups_by_project[proj_name].append(flow_group_instance)
 
         for flow_group_name, flow_group_objects in flow_groups_by_project.items():
             print("")
@@ -539,12 +561,17 @@ class PrefectCloudApiModel(object):
 
             for flow_group_object in flow_group_objects:
 
+                has_one_schedule_only = True if len(flow_group_object.schedules) == 1 else False
+                has_more_than_one_schedule = True if len(flow_group_object.schedules) > 1 else False
+
                 clock_human_description = "[!] - [Not Configured yet]"
-                if flow_group_object.schedules:
+                if has_one_schedule_only:
                     first_clock = flow_group_object.schedules[0]  # type: ScheduleClock
                     clock_human_description = first_clock.get_human_description()
+                elif has_more_than_one_schedule:
+                    clock_human_description = ""
 
-                latest_flow = flow_group_object.flows[0]  # type: FlowObject
+                latest_flow = flow_group_object.get_latest_flow()  # type: FlowObject
                 flow_schedule_active = '[ YES ]' if latest_flow.is_schedule_active() else '[-]'
                 flow_name_with_v = f"|- {latest_flow.get_versioned_name()}"
 
@@ -555,6 +582,15 @@ class PrefectCloudApiModel(object):
                     f"{clock_human_description}"
                 )
                 print(result)
+
+                if has_more_than_one_schedule:
+                    for schedule in flow_group_object.schedules:
+                        schedule_params = schedule.parameters
+                        params_as_str = f"|---- [Parameters]: {schedule_params}"
+                        print(
+                            f"{params_as_str:<100}"
+                            f"{schedule.get_human_description()}"
+                        )
         print("")
 
     def _print_common_report_header(self, sort_value=""):
@@ -583,6 +619,25 @@ class PrefectCloudApiModel(object):
         )
         self._print_report_separator()
 
+    def _get_queries_to_execute(
+        self,
+        project_filters: list[str] = None,
+    ) -> list[str]:
+        queries_to_execute = []
+
+        for project_filter in project_filters:
+            query = self._get_query_from_factory(
+                project_filter=project_filter,
+                include_schedule_only=False
+            )
+            queries_to_execute.append(query)
+
+        if not project_filters:
+            queries_to_execute.append(
+                self._get_query_from_factory(include_schedule_only=False)
+            )
+        return queries_to_execute
+
     def _get_query_from_factory(
         self,
         project_filter: str = None,
@@ -592,10 +647,10 @@ class PrefectCloudApiModel(object):
         query = ""
 
         if include_schedule_only:
-            query = queries.Q_ALL_SCHEDULED_WORKFLOWS
+            query = queries.Q_ALL_SCHEDULED_FLOWS
 
         if project_filter and include_schedule_only:
-            query = queries.Q_ALL_SCHEDULED_WORKFLOWS_WITH_PROJECT_FILTER
+            query = queries.Q_ALL_SCHEDULED_FLOWS_WITH_PROJECT_FILTER
 
         if project_filter and not include_schedule_only:
             query = queries.Q_ALL_FLOW_GROUPS_WITH_PROJECT_FILTER

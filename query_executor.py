@@ -46,7 +46,7 @@ def main():
     )
     parser.add_argument(
         "-r",
-        "--print-general-report",
+        "--print-main-general-report",
         action="store_true",
         required=False,
         help=(
@@ -58,6 +58,7 @@ def main():
     parser.add_argument(
         "-p",
         "--project-filter",
+        action="append",
         default=None,
         required=False,
         metavar="PROJECT_FILTER",
@@ -68,14 +69,14 @@ def main():
     args = parser.parse_args()
     arg_print_schedule_active = args.print_schedule_active
     arg_print_schedule_config = args.print_schedule_config
-    arg_print_general_report = args.print_general_report
-    arg_project_filter = args.project_filter
+    arg_print_main_general_report = args.print_main_general_report
+    arg_project_filter: list[str] = args.project_filter
 
     # validate that any of the important arguments are set.
     any_print_selected = (
         arg_print_schedule_active or
         arg_print_schedule_config or
-        arg_print_general_report
+        arg_print_main_general_report
     )
 
     if not any_print_selected:
@@ -90,25 +91,25 @@ def main():
     )
 
     if arg_print_schedule_active:
-        client.print_report_schedule_active(project_filter=arg_project_filter)
+        client.print_report_schedule_active(project_filter=arg_project_filter.pop())
         print("")
         print("")
 
     if arg_print_schedule_config:
         client.print_report_schedule_configurations(
-            project_filter=arg_project_filter,
+            project_filter=arg_project_filter.pop(),
             sort_by="schedule",
         )
 
     if arg_print_schedule_config:
         client.print_report_schedule_configurations(
-            project_filter=arg_project_filter,
+            project_filter=arg_project_filter.pop(),
             sort_by="schedule",
         )
 
-    if arg_print_general_report:
+    if arg_print_main_general_report:
         client.print_general_report(
-            project_filter=arg_project_filter,
+            project_filters=arg_project_filter,
             sort_by="schedule",
         )
 

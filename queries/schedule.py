@@ -1,5 +1,5 @@
 
-Q_ALL_SCHEDULED_WORKFLOWS = """
+Q_ALL_SCHEDULED_FLOWS = """
 {
   flow_group(
     where: {
@@ -18,7 +18,7 @@ Q_ALL_SCHEDULED_WORKFLOWS = """
 }
 """
 
-Q_ALL_SCHEDULED_WORKFLOWS_WITH_PROJECT_FILTER = """
+Q_ALL_SCHEDULED_FLOWS_WITH_PROJECT_FILTER = """
 {
   flow_group(
     where: {

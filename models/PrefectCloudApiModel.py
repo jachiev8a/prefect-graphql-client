@@ -16,7 +16,7 @@ backend_abspath = os.path.join(pathlib.Path(__file__).parent, 'config', 'backend
 os.environ["PREFECT__BACKEND_CONFIG_PATH"] = backend_abspath
 
 # get values from env
-LOCAL_TIMEZONE = config("LOCAL_TIMEZONE", default='US/Central')
+LOCAL_TIMEZONE = config("LOCAL_TIMEZONE", default='localtime')
 LOCAL_TIMEZONE_STR_FMT = "%I:%M %p"
 
 pair_hours = "2,4,6,8,10,12,14,16,18,20,22"
@@ -568,6 +568,8 @@ class PrefectCloudApiModel(object):
                 if has_one_schedule_only:
                     first_clock = flow_group_object.schedules[0]  # type: ScheduleClock
                     clock_human_description = first_clock.get_human_description()
+                    if first_clock.parameters:
+                        clock_human_description = ""
                 elif has_more_than_one_schedule:
                     clock_human_description = ""
 
@@ -583,14 +585,18 @@ class PrefectCloudApiModel(object):
                 )
                 print(result)
 
-                if has_more_than_one_schedule:
-                    for schedule in flow_group_object.schedules:
-                        schedule_params = schedule.parameters
+                has_parameters = False
+                for schedule in flow_group_object.schedules:
+                    schedule_params = schedule.parameters
+                    if schedule_params:
+                        has_parameters = True
                         params_as_str = f"|---- [Parameters]: {schedule_params}"
                         print(
                             f"{params_as_str:<100}"
                             f"{schedule.get_human_description()}"
                         )
+                if has_parameters:
+                    print("|")
         print("")
 
     def _print_common_report_header(self, sort_value=""):
